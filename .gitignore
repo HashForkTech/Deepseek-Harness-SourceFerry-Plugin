@@ -1,0 +1,8 @@
+node_modules/
+.research/
+.tmp/
+dist/
+artifacts/
+*.env
+config.json
+*.log

@@ -1,0 +1,13 @@
+{
+  "name": "local-web-search",
+  "version": "1.0.0",
+  "description": "Independent SourceFerry web search tool for DeepSeek Harness",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "dsh": { "bundle": { "patch": "cordis.patch.yml" } },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-web": "0.2.0-rc.2"
+  }
+}

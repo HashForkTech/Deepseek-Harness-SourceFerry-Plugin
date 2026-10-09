@@ -1,0 +1,21 @@
+{
+  "name": "deepseek-harness-sourceferry-plugin",
+  "version": "1.0.0",
+  "description": "SourceFerry search and fetch plugins for DeepSeek Harness, with a complete installer",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=24" },
+  "workspaces": ["plugins/local-web-search", "plugins/local-web-fetch"],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "setup": "node scripts/install.mjs",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-web": "0.2.0-rc.2",
+    "yaml": "2.8.1"
+  },
+  "devDependencies": { "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2", "fflate": "0.8.2" }
+}
