@@ -73,5 +73,15 @@ test('complete installer, repeat install, verification, launcher inheritance and
     assert.equal(await readFile(join(profileDir,'package.json'),'utf8'),beforePackage);
     assert.equal(await readFile(join(profileDir,'cordis.patch.yml'),'utf8'),updated);
     assert.equal((await readdir(join(dshHome,'sourceferry','backups'))).length,3);
+    const uninstaller=join(root,'scripts','uninstall.mjs');
+    await run(process.execPath,[uninstaller,'--dry-run'],{env,capture:true});
+    assert.equal(await readFile(join(profileDir,'cordis.patch.yml'),'utf8'),updated);
+    const removed=await run(process.execPath,[uninstaller],{env,capture:true});
+    assert.match(removed.stdout,/pre-installation profile restored/);
+    assert.equal(await readFile(join(profileDir,'package.json'),'utf8'),manifest);
+    assert.equal(await readFile(join(profileDir,'cordis.patch.yml'),'utf8'),patch);
+    await assert.rejects(readFile(configPath),{code:'ENOENT'});
+    await assert.rejects(readFile(join(config.installDir,'package.json')),{code:'ENOENT'});
+    const again=await run(process.execPath,[uninstaller],{env,capture:true}); assert.match(again.stdout,/already uninstalled/);
   } finally {server.closeAllConnections(); server.close();}
 });

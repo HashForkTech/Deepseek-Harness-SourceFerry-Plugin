@@ -118,6 +118,26 @@ Each backup contains the original `package.json`, `cordis.patch.yml`, `pnpm-lock
 
 If installation reports a remaining native web tool, inspect `$DSH_HOME/cordis.patch.yml`: that home-level layer overrides profile patches. The installer fails and restores profile files instead of overwriting that shared layer. Dynamic native web configurations also require manual review or `--keep-native`.
 
+## Uninstall and restore
+
+Fully stop Harness, open the extracted package directory, and run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\uninstall.ps1
+```
+
+```bash
+bash ./uninstall.sh
+```
+
+For another profile, use `-Profile name` (PowerShell) or `--profile name` (Bash). `DSH_HOME` must select the same home used for installation. `-DryRun` / `--dry-run` previews restoration without changing files.
+
+From v1.1 onward, the first installation snapshots the complete profile directory, prior SourceFerry settings, and any existing launcher. Reinstalls preserve that first snapshot. Uninstall restores the original configuration and dependencies, removes files that originally did not exist, and takes newly created plugin runtimes and managed Harness/pnpm installations out of service. Shared runtimes used by another SourceFerry profile are retained. Recovery copies and retired runtimes stay in the private uninstall backup directory.
+
+If files changed after installation, uninstall stops before changing anything. Review the preview, then use `-Force` / `--force` to replace those edits with the original snapshot; the edits are kept in a recovery copy. Running uninstall again is harmless. No gateway connection, token input, or package download is needed for v1.1 snapshots.
+
+Existing v1.0 installs are also supported: the earliest saved profile backup restores their recorded configuration files, and Harness reconciles their dependencies. Those older installers did not snapshot dependency directories or prior SourceFerry settings, so their unsnapshotted runtime directories are retained; complete filesystem restoration of a v1.0 install cannot be reconstructed from its backups. Credentials and launchers created by the legacy installer are removed. Stop Harness before any restoration and restart it afterward.
+
 ## Development and package
 
 ```bash
@@ -126,7 +146,7 @@ npm test
 npm run package
 ```
 
-The package command creates `dist/deepseek-harness-sourceferry-plugin-1.0.0.zip` and its SHA-256 checksum. It includes installer scripts, both plugins, shared code, the dependency lockfile and documentation; it excludes credentials, dependencies, research downloads and test artifacts. The ZIP requires npm registry access on first installation. GitHub Actions tests Node 24 on Linux, macOS and Windows, checks real Harness composition and builds a downloadable package artifact.
+The package command creates `dist/deepseek-harness-sourceferry-plugin-1.1.0.zip` and its SHA-256 checksum. It includes installer scripts, both plugins, shared code, the dependency lockfile and documentation; it excludes credentials, dependencies, research downloads and test artifacts. The ZIP requires npm registry access on first installation. GitHub Actions tests Node 24 on Linux, macOS and Windows, checks real Harness composition and builds a downloadable package artifact.
 
 See [VALIDATION.md](VALIDATION.md) for what has been tested and the limits of those checks.
 

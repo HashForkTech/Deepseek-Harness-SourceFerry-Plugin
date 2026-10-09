@@ -4,7 +4,7 @@ Validated locally on Windows with Node.js `24.20.0`, npm `12.1.0`, pnpm `11.0.0`
 
 ## Automated checks
 
-All 15 automated tests pass. The test suite covers:
+All 21 automated tests pass. The test suite covers:
 
 - SourceFerry bearer authentication, search request shape and bounded normalized results.
 - Current nested fetch payloads (`content.markdown`) and the older direct payload.
@@ -15,6 +15,9 @@ All 15 automated tests pass. The test suite covers:
 - Complete preset preservation, unrelated configuration, YAML comments and `!!js` expressions.
 - Real Harness composition of generated profile overrides.
 - Installer execution, reinstallation, verification, launcher environment inheritance, private file creation and rollback after a higher-priority profile override defeats native-tool disabling. This test substitutes package-manager and CLI commands while retaining real plugin code, schema compilation, HTTP calls and Harness patch composition.
+- Uninstall after reinstallation restores the first profile snapshot and original file contents, removes generated settings/launchers, and retires newly created runtimes.
+- Read-only previews, later-edit protection, forced restoration with recovery copies, damaged-backup checks, bounded target paths, retained shared runtimes, restored executable modes, and recovery if uninstall fails.
+- v1.0 backup compatibility and read-only legacy previews. Older backups cannot reconstruct unsnapshotted dependency/runtime directories.
 
 ## Real CLI installation
 

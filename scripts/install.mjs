@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createInterface } from 'node:readline/promises';
 import { createGateway, gatewaySettings } from '../shared/gateway.mjs';
 import { findCommand, run } from './process.mjs';
+import { recordOwned, sealCheckpoint } from './restore.mjs';
 
 export const HARNESS_VERSION = '0.2.0-rc.2';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -129,12 +130,15 @@ export async function main(args = process.argv.slice(2)) {
   const search = await gateway.search(['DeepSeek Harness official site'], 3);
   if (!search.sources.length) throw new Error('Gateway search returned no results; fix the gateway first.');
   await gateway.fetch('https://www.deepseek.com/harness/');
+  const { planFor, prepareCheckpoint } = await import('./uninstall.mjs');
+  const checkpoint = await prepareCheckpoint(planFor(dshHome, options.profile));
   const npm = await findCommand('npm');
   let dsh;
   try { dsh = await findCommand('dsh'); } catch {
     if (previous?.dsh && await exists(previous.dsh)) dsh = previous.dsh;
   }
-  const installDir = join(base, 'installations', `1.0.0-${Date.now()}-${process.pid}`);
+  const installDir = join(base, 'installations', `1.1.0-${Date.now()}-${process.pid}`);
+  await recordOwned(checkpoint, installDir, privateFile);
   await mkdir(installDir, { recursive: true });
   console.log('Installing plugin dependencies into a permanent directory...');
   for (const path of ['package.json', 'package-lock.json', 'plugins', 'shared', 'scripts']) {
@@ -145,6 +149,7 @@ export async function main(args = process.argv.slice(2)) {
     if (options.profile === 'desktop') throw new Error('Initialize Harness Desktop and install its matching dsh CLI before targeting desktop.');
     console.log(`Installing managed DeepSeek Harness ${HARNESS_VERSION}...`);
     const harnessDir = join(base, 'harness');
+    await recordOwned(checkpoint, harnessDir, privateFile);
     await run(npm, ['install', '--prefix', harnessDir, `@deepseek-ai/dsh@${HARNESS_VERSION}`, '--no-audit', '--no-fund']);
     dsh = join(harnessDir, 'node_modules', '.bin', process.platform === 'win32' ? 'dsh.cmd' : 'dsh');
   }
@@ -156,6 +161,7 @@ export async function main(args = process.argv.slice(2)) {
   try { await findCommand('pnpm'); } catch {
     console.log('Installing managed pnpm 11.0.0 for Harness plugin management...');
     const toolingDir = join(base, 'tooling');
+    await recordOwned(checkpoint, toolingDir, privateFile);
     await run(npm, ['install', '--prefix', toolingDir, 'pnpm@11.0.0', '--ignore-scripts', '--no-audit', '--no-fund']);
     toolingBin = join(toolingDir, 'node_modules', '.bin');
     env.PATH = `${toolingBin}${delimiter}${process.env.PATH ?? ''}`;
@@ -204,6 +210,7 @@ export async function main(args = process.argv.slice(2)) {
       backupDir, launcher: process.platform === 'win32' ? `${launcher}.cmd` : launcher
     }, null, 2));
     await privateFile(configPath, JSON.stringify(config, null, 2) + '\n');
+    await sealCheckpoint(checkpoint, privateFile);
     console.log(`Installation complete. Restart Harness using:\n${process.platform === 'win32' ? launcher + '.cmd' : launcher} --no-open\nOpen a new conversation after restarting. Gateway credentials are stored privately and never printed.`);
   } catch (error) {
     await restoreProfile(profileDir, backupDir);
@@ -211,6 +218,7 @@ export async function main(args = process.argv.slice(2)) {
       try { await run(dsh, ['plugin', '--profile', options.profile, 'install'], { env }); }
       catch { console.error('Profile files restored; rerun dsh plugin install to reconcile its dependencies.'); }
     }
+    await sealCheckpoint(checkpoint, privateFile);
     throw new Error(`${error.message}\nProfile files restored from ${backupDir}.`);
   }
 }
