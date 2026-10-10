@@ -50,6 +50,18 @@ On a profile-update failure, it restores the backed-up profile files and attempt
 
 The installer prints your exact launcher path. For the default home and `SourceFerry` profile:
 
+**Open the browser UI automatically** for normal local use:
+
+```bash
+~/.dsh/sourceferry/bin/dsh-SourceFerry
+```
+
+```powershell
+& "$HOME\.dsh\sourceferry\bin\dsh-SourceFerry.cmd"
+```
+
+**Start without opening a browser** for server, SSH or manual browser use:
+
 ```bash
 ~/.dsh/sourceferry/bin/dsh-SourceFerry --no-open
 ```
@@ -57,6 +69,8 @@ The installer prints your exact launcher path. For the default home and `SourceF
 ```powershell
 & "$HOME\.dsh\sourceferry\bin\dsh-SourceFerry.cmd" --no-open
 ```
+
+With `--no-open`, Harness still serves the UI and prints its startup URL; open that URL manually. SSH sessions also suppress automatic browser opening. This option affects browser opening only and is optional for SourceFerry. The wrapper forwards it to Harness when supplied.
 
 The wrapper loads credentials before starting `dsh`, pins `DSH_WEB_FETCH_PROVIDER=local-crawl4ai-fetch` and clears `DSH_WEB_SEARCH_PROVIDER` in the child process. Both custom tools dispatch directly to their SourceFerry providers, independently of native provider selection. Launch through the wrapper after installation, and open a **new conversation** after changing plugins.
 
