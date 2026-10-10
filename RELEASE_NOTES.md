@@ -2,6 +2,7 @@
 
 Two independently switchable DeepSeek Harness plugins send web search and rendered page fetch requests to the SourceFerry Gateway.
 
+- Callable tools: `SourceFerry_search` and `SourceFerry_fetch`, with the `SourceFerry` profile.
 - One-command installation for Windows, Linux, macOS and WSL, with hidden token input and gateway verification.
 - Locked dependencies, private credential storage, permanent runtime paths and a generated launcher.
 - Selective uninstall removes only SourceFerry entries and files, preserving other plugins, settings and later user changes.

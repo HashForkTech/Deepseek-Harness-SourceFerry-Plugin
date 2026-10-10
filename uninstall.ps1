@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Profile = 'web', [switch]$DryRun, [switch]$Help)
+param([string]$Profile = 'SourceFerry', [switch]$DryRun, [switch]$Help)
 $ErrorActionPreference = 'Stop'
 $taskArguments = @((Join-Path $PSScriptRoot 'scripts/uninstall.mjs'), '--profile', $Profile)
 if ($DryRun) { $taskArguments += '--dry-run' }

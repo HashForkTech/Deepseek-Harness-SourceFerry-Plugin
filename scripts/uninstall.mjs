@@ -5,11 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { privateFile } from './install.mjs';
 import { readOptional, safePath, applyRemoval } from './selective.mjs';
 import { exists, ensureCheckpoint, loadCheckpoint } from './restore.mjs';
-export function planFor(home, profile = 'web') {
+export function planFor(home, profile = 'SourceFerry') {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(profile)) throw new Error('Invalid profile name.');
   home = resolve(home); const base = join(home, 'sourceferry');
   const profileDir = join(home, 'profiles', profile), settingsDir = join(base, 'profiles', profile);
-  const launcher = join(base, 'bin', (profile === 'web' ? 'dsh-web' : `dsh-sourceferry-${profile}`) + (process.platform === 'win32' ? '.cmd' : ''));
+  const launcher = join(base, 'bin', (profile === 'SourceFerry' ? 'dsh-SourceFerry' : `dsh-sourceferry-${profile}`) + (process.platform === 'win32' ? '.cmd' : ''));
   return { home, profile, base, profileDir, settingsDir, launcher, journalDir: join(base, 'uninstall', profile),
     targets: [profileDir, settingsDir, launcher],
     allowedTargets: [profileDir, settingsDir, launcher, ...['package.json','cordis.patch.yml','pnpm-lock.yaml','pnpm-workspace.yaml'].map(name => join(profileDir,name))],
@@ -33,7 +33,7 @@ export async function prepareCheckpoint(plan) {
   const current = await loadCheckpoint(plan);
   return current && !current.state.restoredAt ? current : ensureCheckpoint(plan, privateFile, current ? undefined : await legacyBaseline(plan));
 }
-export async function uninstall(home, {profile='web',dryRun=false, ...unsupported}={}) {
+export async function uninstall(home, {profile='SourceFerry',dryRun=false, ...unsupported}={}) {
   if(Object.keys(unsupported).length) throw new Error('Only selective uninstall is supported; --force and full restore are not available.');
   const plan=planFor(home,profile), configPath=join(plan.settingsDir,'config.json');
   const configText=await readOptional(home,configPath);
@@ -91,11 +91,11 @@ export async function uninstall(home, {profile='web',dryRun=false, ...unsupporte
   return result;
 }
 export async function main(args=process.argv.slice(2)) {
-  let profile='web',dryRun=false;
+  let profile='SourceFerry',dryRun=false;
   for(let i=0;i<args.length;i++) {
     if(args[i]==='--profile') {profile=args[++i];if(!profile) throw new Error('Missing profile.');}
     else if(args[i]==='--dry-run') dryRun=true;
-    else if(['--help','-h'].includes(args[i])) { console.log('Remove only SourceFerry. Stop Harness first.\nUsage: node scripts/uninstall.mjs [--profile web] [--dry-run]\nOther plugins and settings are preserved. No full restore or force option. DSH_HOME selects the installation home.');return;}
+    else if(['--help','-h'].includes(args[i])) { console.log('Remove only SourceFerry. Stop Harness first.\nUsage: node scripts/uninstall.mjs [--profile SourceFerry] [--dry-run]\nOther plugins and settings are preserved. No full restore or force option. DSH_HOME selects the installation home.');return;}
     else throw new Error('Unknown uninstall option. Only selective removal is supported.');
   }
   const configured=process.env.DSH_HOME?.trim();

@@ -9,12 +9,13 @@ import { run } from '../scripts/process.mjs';
 test('complete installer, repeat install, verification, launcher inheritance and failed-profile rollback', {timeout:120000}, async () => {
   await mkdir('.tmp',{recursive:true});
   const root = resolve('.'), temp = await mkdtemp(join(resolve('.tmp'),'install-'));
-  const dshHome = join(temp,'home'), bin = join(temp,'bin'), profileDir = join(dshHome,'profiles','web');
-  await mkdir(profileDir,{recursive:true}); await mkdir(bin,{recursive:true});
+  const dshHome = join(temp,'home'), bin = join(temp,'bin'), profileDir = join(dshHome,'profiles','SourceFerry');
+  const webDir=join(dshHome,'profiles','web');
+  await mkdir(webDir,{recursive:true}); await mkdir(bin,{recursive:true});
   const manifest = JSON.stringify({name:'fixture-profile',dependencies:{},dsh:{profile:{bundles:[]}}});
-  await writeFile(join(profileDir,'package.json'),manifest);
+  await writeFile(join(webDir,'package.json'),manifest);
   const patch = '# Existing customization\n[]\n';
-  await writeFile(join(profileDir,'cordis.patch.yml'),patch);
+  await writeFile(join(webDir,'cordis.patch.yml'),patch);
   await writeFile(join(dshHome,'cordis.yml'),'[]\n');
   await writeFile(join(dshHome,'base.yml'), `- insert:
     - id: web
@@ -55,8 +56,10 @@ test('complete installer, repeat install, verification, launcher inheritance and
   try {
     const installed=await run(process.execPath,[installer],{env,capture:true});
     assert.match(installed.stdout,/Installation complete/);
+    assert.equal(await readFile(join(webDir,'package.json'),'utf8'),manifest);
+    assert.equal(await readFile(join(webDir,'cordis.patch.yml'),'utf8'),patch);
     assert.ok(!installed.stdout.includes(env.LOCAL_WEB_API_TOKEN));
-    const configPath=join(dshHome,'sourceferry','profiles','web','config.json');
+    const configPath=join(dshHome,'sourceferry','profiles','SourceFerry','config.json');
     const config=JSON.parse(await readFile(configPath,'utf8'));
     assert.equal(config.env.LOCAL_WEB_API_TOKEN,env.LOCAL_WEB_API_TOKEN);
     if(process.platform!=='win32') assert.equal((await stat(configPath)).mode & 0o777,0o600);
@@ -65,7 +68,7 @@ test('complete installer, repeat install, verification, launcher inheritance and
     await run(process.execPath,[installer,'--verify'],{env,capture:true});
     await run(process.execPath,[join(config.installDir,'scripts','launch.mjs'),configPath,'--no-open'],{env,capture:true});
     const launch=JSON.parse(await readFile(join(dshHome,'launch-result.json'),'utf8'));
-    assert.deepEqual(launch,{args:['--profile','web','--no-open'],tokenPresent:true,fetchProvider:'local-crawl4ai-fetch',searchProvider:null});
+    assert.deepEqual(launch,{args:['--profile','SourceFerry','--no-open'],tokenPresent:true,fetchProvider:'local-crawl4ai-fetch',searchProvider:null});
     await run(process.execPath,[installer],{env,capture:true});
     assert.equal(await readFile(join(profileDir,'cordis.patch.yml'),'utf8'),updated);
     const beforePackage=await readFile(join(profileDir,'package.json'),'utf8');
@@ -88,7 +91,6 @@ test('complete installer, repeat install, verification, launcher inheritance and
     assert.equal(finalManifest.custom.recent,'keep');
     assert.equal(await readFile(join(profileDir,'later-user-file.txt'),'utf8'),'keep this file');
     const finalPatch=await readFile(join(profileDir,'cordis.patch.yml'),'utf8');
-    assert.match(finalPatch, /Existing customization/);
     assert.match(finalPatch, /\[\]/);
     await assert.rejects(readFile(configPath),{code:'ENOENT'});
     assert.ok(await readFile(join(config.installDir,'package.json')));

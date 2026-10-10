@@ -15,7 +15,7 @@ const exists = async path => { try { await access(path, constants.F_OK); return 
 const readJson = async path => JSON.parse(await readFile(path, 'utf8'));
 
 export function parseArgs(args) {
-  const options = { profile: 'web', keepNative: false, verify: false, help: false };
+  const options = { profile: 'SourceFerry', keepNative: false, verify: false, help: false };
   for (let i = 0; i < args.length; i++) {
     const argument = args[i];
     if (argument === '--profile' || argument === '--gateway-url') {
@@ -93,7 +93,7 @@ async function restoreProfile(profileDir, backupDir) {
 export async function main(args = process.argv.slice(2)) {
   const options = parseArgs(args);
   if (options.help) {
-    console.log('SourceFerry plugin installer\nUsage: node scripts/install.mjs [--profile web] [--gateway-url URL] [--keep-native] [--verify]\nCredentials: LOCAL_WEB_GATEWAY_URL and LOCAL_WEB_API_TOKEN; otherwise prompted (token hidden).\nRequires Node.js 24+ and npm. Installs pinned Harness if dsh is absent; an existing different version is rejected.');
+    console.log('SourceFerry plugin installer\nUsage: node scripts/install.mjs [--profile SourceFerry] [--gateway-url URL] [--keep-native] [--verify]\nCredentials: LOCAL_WEB_GATEWAY_URL and LOCAL_WEB_API_TOKEN; otherwise prompted (token hidden).\nRequires Node.js 24+ and npm. Installs pinned Harness if dsh is absent; an existing different version is rejected.');
     return;
   }
   if (Number(process.versions.node.split('.')[0]) < 24) throw new Error('Node.js 24+ is required.');
@@ -171,6 +171,10 @@ export async function main(args = process.argv.slice(2)) {
   console.log('Verifying real plugin schemas, registration and gateway calls...');
   await verifyPlugins(env);
   const { disableNativeTools, checkEffectiveTools } = await import(pathToFileURL(join(installDir, 'scripts/profile.mjs')));
+  // Initialize a new named profile from the shipped web template, never from a user's web profile.
+  if (!await exists(profileDir) && options.profile !== 'web' && options.profile !== 'desktop') {
+    await run(dsh, ['--profile', options.profile, '--from-default-profile', 'web', '--dump-default-config'], { env, capture: true });
+  }
   const backupDir = join(base, 'backups', `${options.profile}-${Date.now()}`);
   await backupProfile(profileDir, backupDir);
   console.log(`Profile backup: ${backupDir}`);
@@ -200,7 +204,7 @@ export async function main(args = process.argv.slice(2)) {
         ...(env.LOCAL_WEB_TIMEOUT_MS ? { LOCAL_WEB_TIMEOUT_MS: env.LOCAL_WEB_TIMEOUT_MS } : {}) } };
     const bin = join(base, 'bin');
     await mkdir(bin, { recursive: true });
-    const launcher = join(bin, options.profile === 'web' ? 'dsh-web' : `dsh-sourceferry-${options.profile}`);
+    const launcher = join(bin, options.profile === 'SourceFerry' ? 'dsh-SourceFerry' : `dsh-sourceferry-${options.profile}`);
     const launchScript = join(installDir, 'scripts', 'launch.mjs');
     if (process.platform === 'win32') {
       const content = `@echo off\r\n"${process.execPath}" "${launchScript}" "${configPath}" %*\r\nexit /b %errorlevel%\r\n`;

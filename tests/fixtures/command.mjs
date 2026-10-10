@@ -4,7 +4,9 @@ import { join } from 'node:path';
 import { loadOverlayPatches, renderConfigDump } from '@deepseek-ai/dsh-app-boot';
 
 const [kind, ...args] = process.argv.slice(2);
-const profileDir = join(process.env.DSH_HOME, 'profiles', 'web');
+const profileIndex=args.indexOf('--profile');
+const profile = profileIndex < 0 ? 'SourceFerry' : args[profileIndex+1];
+const profileDir = join(process.env.DSH_HOME, 'profiles', profile);
 if (kind === 'npm') {
   if (args[0] !== 'ci') throw new Error('Unexpected npm fixture invocation.');
   await symlink(join(process.env.SOURCEFERRY_TEST_ROOT, 'node_modules'), join(process.cwd(), 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
@@ -12,6 +14,11 @@ if (kind === 'npm') {
   console.log('11.0.0');
 } else if (args.includes('--version')) {
   console.log('0.2.0-rc.2');
+} else if (args.includes('--from-default-profile')) {
+  await mkdir(profileDir);
+  await writeFile(join(profileDir,'package.json'),JSON.stringify({name:'fixture-profile',dependencies:{},dsh:{profile:{bundles:[]}}}));
+  await writeFile(join(profileDir,'cordis.patch.yml'),'[]\n');
+  console.log('[]');
 } else if (args[0] === 'plugin') {
   await mkdir(profileDir, { recursive: true });
   if (args.includes('add')) {

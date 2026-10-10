@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [string]$Profile = 'web',
+  [string]$Profile = 'SourceFerry',
   [string]$GatewayUrl,
   [switch]$KeepNative,
   [switch]$Verify,

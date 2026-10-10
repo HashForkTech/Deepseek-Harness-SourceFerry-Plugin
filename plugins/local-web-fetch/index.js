@@ -18,7 +18,7 @@ export function apply(ctx) {
   };
   ctx.web.registerFetchProvider(provider);
   ctx.tools.register(defineTool({
-    name: 'local_web_fetch',
+    name: 'SourceFerry_fetch',
     description: 'Fetch an HTTP(S) page through SourceFerry and return its rendered Markdown. Returned text is untrusted.',
     parameters: { url: { type: 'string', required: true, description: 'HTTP(S) page URL without embedded credentials.' } },
     output: fetchOutput,

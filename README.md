@@ -4,8 +4,8 @@ Two independently switchable [DeepSeek Harness](https://github.com/deepseek-ai/d
 
 | Operation | Model tool | Harness plugin | Provider ID | Gateway endpoint |
 | --- | --- | --- | --- | --- |
-| Search | `local_web_search` | `local-web-search` | `local-crawl4ai-search` | `POST /search` |
-| Fetch | `local_web_fetch` | `local-web-fetch` | `local-crawl4ai-fetch` | `POST /fetch` |
+| Search | `SourceFerry_search` | `local-web-search` | `local-crawl4ai-search` | `POST /search` |
+| Fetch | `SourceFerry_fetch` | `local-web-fetch` | `local-crawl4ai-fetch` | `POST /fetch` |
 
 The default installer replaces native `web_search` and `web_fetch` in the selected profile. SourceFerry handles SearXNG discovery and Crawl4AI browser rendering; the Harness computer needs no Docker or Chromium for these plugins.
 
@@ -40,7 +40,7 @@ The installer:
 2. Installs pinned plugin dependencies into a permanent directory and prepares pnpm if needed.
 3. Installs the pinned Harness CLI if missing and checks its exact version.
 4. Validates both plugins using Harness's real schema compiler and executes both tools against the gateway.
-5. Backs up profile files, then adds both plugin bundles with `dsh plugin --profile web add .`.
+5. Backs up profile files, then adds both plugin bundles with `dsh plugin --profile SourceFerry add .`.
 6. Disables every native web tool instance by preserving each complete effective preset configuration and changing its search/fetch flags.
 7. Checks the composed profile and writes a private configuration, installation report and launch wrapper.
 
@@ -48,14 +48,14 @@ On a profile-update failure, it restores the backed-up profile files and attempt
 
 ## Start Harness
 
-The installer prints your exact launcher path. For the default home and `web` profile:
+The installer prints your exact launcher path. For the default home and `SourceFerry` profile:
 
 ```bash
-~/.dsh/sourceferry/bin/dsh-web --no-open
+~/.dsh/sourceferry/bin/dsh-SourceFerry --no-open
 ```
 
 ```powershell
-& "$HOME\.dsh\sourceferry\bin\dsh-web.cmd" --no-open
+& "$HOME\.dsh\sourceferry\bin\dsh-SourceFerry.cmd" --no-open
 ```
 
 The wrapper loads credentials before starting `dsh`, pins `DSH_WEB_FETCH_PROVIDER=local-crawl4ai-fetch` and clears `DSH_WEB_SEARCH_PROVIDER` in the child process. Both custom tools dispatch directly to their SourceFerry providers, independently of native provider selection. Launch through the wrapper after installation, and open a **new conversation** after changing plugins.
@@ -63,32 +63,32 @@ The wrapper loads credentials before starting `dsh`, pins `DSH_WEB_FETCH_PROVIDE
 ## Options
 
 ```bash
-bash ./install.sh --profile web --gateway-url http://192.168.1.20:8080
+bash ./install.sh --profile SourceFerry --gateway-url http://192.168.1.20:8080
 bash ./install.sh --keep-native
 bash ./install.sh --verify
 bash ./install.sh --help
 ```
 
 ```powershell
-.\install.ps1 -Profile web -GatewayUrl http://192.168.1.20:8080
+.\install.ps1 -Profile SourceFerry -GatewayUrl http://192.168.1.20:8080
 .\install.ps1 -KeepNative
 .\install.ps1 -Verify
 .\install.ps1 -Help
 ```
 
-`--keep-native` leaves the current native-tool configuration intact; it does not re-enable previously disabled tools. Custom profiles must provide the `tools` and `web` services. The default `web` profile is recommended. For `desktop`, initialize the application once and fully quit it before installation; use its matching CLI and the generated launcher.
+`--keep-native` leaves the current native-tool configuration intact; it does not re-enable previously disabled tools. Custom profiles must provide the `tools` and `web` services. The installer creates the default `SourceFerry` profile from Harness's shipped `web` template when it is missing. Your existing `web` profile is preserved. For `desktop`, initialize the application once and fully quit it before installation; use its matching CLI and the generated launcher.
 
 For unattended installation, set `LOCAL_WEB_GATEWAY_URL` and `LOCAL_WEB_API_TOKEN` in the environment before invoking the same command. Use your environment's secret store or a private shell prompt for the token. Do not place it in command arguments, Git files, screenshots or logs. `LOCAL_WEB_TIMEOUT_MS` optionally overrides the default 600,000 ms request timeout.
 
 ## Use the tools
 
 ```text
-Use only local_web_search to search for DeepSeek Harness official site.
+Use only SourceFerry_search to search for DeepSeek Harness official site.
 Return the top 3 results with titles, URLs and snippets.
 ```
 
 ```text
-Use only local_web_fetch to fetch https://www.deepseek.com/harness/.
+Use only SourceFerry_fetch to fetch https://www.deepseek.com/harness/.
 Return the page title and first main heading.
 ```
 
@@ -103,9 +103,9 @@ Enable or disable each plugin independently in Harness's plugin manager. The two
 ```text
 sourceferry/
   bin/                              launch wrappers
-  profiles/web/config.json          private gateway credentials and CLI paths
-  profiles/web/effective-config.yml  effective profile after installation
-  profiles/web/installation-report.json
+  profiles/SourceFerry/config.json          private gateway credentials and CLI paths
+  profiles/SourceFerry/effective-config.yml  effective profile after installation
+  profiles/SourceFerry/installation-report.json
   installations/                    permanent plugin runtime copies
   harness/                          managed CLI, when dsh was missing
   tooling/                          managed pnpm, when it was missing

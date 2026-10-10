@@ -30,9 +30,9 @@ export async function verifyPlugins(env, { live = true } = {}) {
     if (tools.size !== 2 || providers.size !== 2) throw new Error('Both SourceFerry tools and providers must register.');
     if (live) {
       const exec = { signal: new AbortController().signal };
-      const search = await tools.get('local_web_search').execute({ queries: ['DeepSeek Harness official site'], max_results: 3 }, exec);
+      const search = await tools.get('SourceFerry_search').execute({ queries: ['DeepSeek Harness official site'], max_results: 3 }, exec);
       if (!search.sources.length) throw new Error('Plugin search returned no sources.');
-      await tools.get('local_web_fetch').execute({ url: search.sources[0].url }, exec);
+      await tools.get('SourceFerry_fetch').execute({ url: search.sources[0].url }, exec);
     }
     return { tools: [...tools.keys()], providers: [...providers.keys()], live };
   } finally {

@@ -4,6 +4,7 @@ import { parseArgs } from '../scripts/install.mjs';
 import { commandSpec } from '../scripts/process.mjs';
 
 test('installer options reject path traversal and unsupported options', () => {
+  assert.equal(parseArgs([]).profile, 'SourceFerry');
   assert.deepEqual(parseArgs(['--profile','web','--keep-native']), {profile:'web',keepNative:true,verify:false,help:false});
   for (const args of [['--profile','../other'],['--profile','web/other'],['--profile'],['--token','secret'],['--unknown']]) assert.throws(()=>parseArgs(args));
 });
