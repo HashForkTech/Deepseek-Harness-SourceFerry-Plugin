@@ -25,6 +25,15 @@ async function walk(relative) {
 }
 for (const file of ['README.md', 'LICENSE', 'VALIDATION.md', 'package.json', 'package-lock.json', 'install.sh', 'install.ps1', 'uninstall.sh', 'uninstall.ps1', '.gitattributes', '.gitignore']) await add(file);
 for (const directory of ['plugins', 'shared', 'scripts']) await walk(directory);
+async function vendor(dir, relative='') {
+  for (const entry of await readdir(join(root,'node_modules/yaml',dir,relative),{withFileTypes:true})) {
+    const path=relative ? relative+'/'+entry.name : entry.name;
+    if(entry.isDirectory()) await vendor(dir,path);
+    else if(entry.name.endsWith('.js')) files[prefix+'/scripts/vendor/yaml/'+dir+'/'+path]=new Uint8Array(await readFile(join(root,'node_modules/yaml',dir,path)));
+  }
+}
+for(const name of ['package.json','LICENSE']) files[prefix+'/scripts/vendor/yaml/'+name]=new Uint8Array(await readFile(join(root,'node_modules/yaml',name)));
+await vendor('dist');
 const archive = zipSync(files, { level: 9 });
 const output = join(root, 'dist');
 await mkdir(output, { recursive: true });

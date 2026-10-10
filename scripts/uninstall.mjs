@@ -1,10 +1,10 @@
-import { readdir, readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { readdir, readFile, lstat, readlink } from 'node:fs/promises';
+import { join, resolve, dirname, relative, isAbsolute } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { privateFile } from './install.mjs';
-import { run } from './process.mjs';
-import { exists, ensureCheckpoint, loadCheckpoint, restoreCheckpoint } from './restore.mjs';
+import { readOptional, safePath, applyRemoval } from './selective.mjs';
+import { exists, ensureCheckpoint, loadCheckpoint } from './restore.mjs';
 export function planFor(home, profile = 'web') {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(profile)) throw new Error('Invalid profile name.');
   home = resolve(home); const base = join(home, 'sourceferry');
@@ -33,51 +33,73 @@ export async function prepareCheckpoint(plan) {
   const current = await loadCheckpoint(plan);
   return current && !current.state.restoredAt ? current : ensureCheckpoint(plan, privateFile, current ? undefined : await legacyBaseline(plan));
 }
-export async function uninstall(home, { profile = 'web', dryRun = false, force = false } = {}) {
-  const plan = planFor(home,profile);
-  let checkpoint = await loadCheckpoint(plan);
-  const configPath = join(plan.settingsDir,'config.json');
-  const config = await exists(configPath) ? JSON.parse(await readFile(configPath,'utf8')) : undefined;
-  if (!checkpoint) {
-    const baseline = await legacyBaseline(plan);
-    if (!baseline || !config) { console.log('No SourceFerry installation found for this profile.'); return; }
-    if (dryRun) { console.log(JSON.stringify({ legacy: true, targets: baseline.map(t => ({ path: t.path, action: t.source === null ? 'remove' : 'restore' })), note: 'Unsnapshotted legacy dependency/runtime directories are retained.' },null,2)); return; }
-    checkpoint = await ensureCheckpoint(plan,privateFile,baseline);
-  }
-  const references = [];
-  const profiles = join(plan.base,'profiles');
-  if (await exists(profiles)) for (const other of await readdir(profiles)) {
-    if (other === profile) continue;
-    const path = join(profiles,other,'config.json');
-    if (await exists(path)) {
-      const saved = JSON.parse(await readFile(path,'utf8'));
-      references.push(saved.installDir, saved.dsh, saved.toolingBin);
-    }
-  }
-  const result = await restoreCheckpoint(checkpoint, privateFile, { dryRun, force,
-    keepOwned: async path => references.some(reference => reference && (resolve(reference) === resolve(path) || resolve(reference).startsWith(resolve(path) + '/'))) || references.some(reference => reference && resolve(reference).startsWith(resolve(path) + '\\')),
-    reconcile: async () => {
-      if (checkpoint.state.legacy && config?.dsh && await exists(join(plan.profileDir,'package.json'))) {
-        const env = { ...process.env, DSH_HOME: plan.home };
-        if (config.toolingBin) env.PATH = `${config.toolingBin}${process.platform === 'win32' ? ';' : ':'}${env.PATH}`;
-        await run(config.dsh,['plugin','--profile',profile,'install'],{env,capture:true});
+export async function uninstall(home, {profile='web',dryRun=false, ...unsupported}={}) {
+  if(Object.keys(unsupported).length) throw new Error('Only selective uninstall is supported; --force and full restore are not available.');
+  const plan=planFor(home,profile), configPath=join(plan.settingsDir,'config.json');
+  const configText=await readOptional(home,configPath);
+  const checkpoint=await loadCheckpoint(plan);
+  const config=configText===null ? {} : JSON.parse(configText);
+  const metadataPath=join(plan.settingsDir,'uninstall-ownership.json');
+  const metadataText=await readOptional(home,metadataPath), metadata=metadataText ? JSON.parse(metadataText) : {};
+  const edits=[],removals=[],removedNames=[];
+  const manifestPath=join(plan.profileDir,'package.json'), manifestText=await readOptional(home,manifestPath);
+  if(manifestText!==null) {
+    const manifest=JSON.parse(manifestText), original=JSON.stringify(manifest);
+    for(const name of ['local-web-search','local-web-fetch']) {
+      const spec=manifest.dependencies?.[name];
+      const normalized=typeof spec==='string' ? spec.replace(/^(link:|file:)/,'').replaceAll('\\','/') : '';
+      // Same-name packages redirected elsewhere are no longer ours.
+      const candidate=resolve(plan.profileDir,normalized), rel=relative(join(plan.base,'installations'),candidate);
+      if(spec===undefined || rel && !rel.startsWith('..')&&!isAbsolute(rel) && normalized.endsWith('/plugins/'+name)) {
+        if(spec!==undefined) delete manifest.dependencies[name];
+        if(Array.isArray(manifest.dsh?.profile?.bundles)) manifest.dsh.profile.bundles=manifest.dsh.profile.bundles.filter(value=>value!==name);
+        removedNames.push(name);
       }
     }
-  });
-  console.log(dryRun ? JSON.stringify(result,null,2) : result.alreadyRestored ? 'This installation is already uninstalled.' : `SourceFerry uninstalled; pre-installation profile restored. Restart Harness. Recovery: ${result.recovery}`);
-  if (result.legacy) console.log('Legacy v1.0 backups restore recorded profile files; unsnapshotted dependency/runtime directories are retained.');
-}
-export async function main(args = process.argv.slice(2)) {
-  let profile = 'web', dryRun = false, force = false;
-  for (let i=0;i<args.length;i++) {
-    if (args[i] === '--profile') { profile=args[++i]; if(!profile) throw new Error('Missing profile.'); }
-    else if(args[i] === '--dry-run') dryRun=true;
-    else if(args[i] === '--force') force=true;
-    else if(['--help','-h'].includes(args[i])) { console.log('Uninstall SourceFerry and restore the original snapshot. Stop Harness first.\nUsage: node scripts/uninstall.mjs [--profile web] [--dry-run] [--force]\nDSH_HOME selects the installation home. --force replaces files edited after installation; a recovery copy is retained.'); return; }
-    else throw new Error('Unknown uninstall option.');
+    if(JSON.stringify(manifest)!==original) edits.push({path:manifestPath,before:manifestText,after:JSON.stringify(manifest,null,2)+'\n'});
   }
-  const configured = process.env.DSH_HOME?.trim();
-  const home = configured ? resolve(configured === '~' ? homedir() : configured.replace(/^~[\\/]/,`${homedir()}/`)) : join(homedir(),'.dsh');
-  await uninstall(home,{profile,dryRun,force});
+  const {removeSourceFerryPatch,removeLockReferences}=await import('./remove-profile.mjs');
+  const patchPath=join(plan.profileDir,'cordis.patch.yml'), patchText=await readOptional(home,patchPath);
+  if(patchText!==null) {
+    let beforePatch=metadata.beforePatch;
+    if(beforePatch===undefined && configText!==null) {
+      const target=checkpoint?.state.targets.find(t=>resolve(t.path)===resolve(plan.profileDir));
+      const baseline=target?.present ? join(plan.journalDir,target.slot,'cordis.patch.yml') : (await legacyBaseline(plan))?.find(t=>resolve(t.path)===resolve(patchPath))?.source;
+      beforePatch=baseline ? await readOptional(home,baseline) : null;
+    }
+    const after=removeSourceFerryPatch(patchText,{beforePatch:beforePatch??'[]\n',afterPatch:metadata.afterPatch??null,beforeEffective:metadata.beforeEffective??null});
+    edits.push({path:patchPath,before:patchText,after});
+  }
+  const lockPath=join(plan.profileDir,'pnpm-lock.yaml'), lockText=await readOptional(home,lockPath);
+  if(lockText!==null) edits.push({path:lockPath,before:lockText,after:removeLockReferences(lockText,removedNames)});
+  for(const name of removedNames) {
+    const path=join(plan.profileDir,'node_modules',name); await safePath(home,path,{link:true});
+    if(await exists(path) && (await lstat(path)).isSymbolicLink()) {
+      const target=resolve(dirname(path),await readlink(path)), rel=relative(join(plan.base,'installations'),target);
+      if(rel && !rel.startsWith('..')&&!isAbsolute(rel)) removals.push(path);
+    }
+  }
+  for(const path of [configPath,metadataPath,join(plan.settingsDir,'installation-report.json'),join(plan.settingsDir,'effective-config.yml')]) if(await readOptional(home,path)!==null) removals.push(path);
+  const launcher=await readOptional(home,plan.launcher);
+  if(launcher!==null && launcher.includes('launch.mjs') && launcher.replaceAll('\\','/').includes(plan.base.replaceAll('\\','/')+'/installations/')) removals.push(plan.launcher);
+  if(checkpoint&&!checkpoint.state.restoredAt) {
+    const statePath=join(plan.journalDir,'state.json'), before=await readOptional(home,statePath);
+    edits.push({path:statePath,before,after:JSON.stringify({...checkpoint.state,restoredAt:new Date().toISOString(),selectiveUninstall:true},null,2)});
+  }
+  const result=await applyRemoval(home,plan.base,edits,removals,privateFile,{dryRun});
+  console.log(dryRun ? JSON.stringify(result,null,2) : !result.edited.length&&!result.removed.length ? 'SourceFerry is already uninstalled.' : 'SourceFerry selectively uninstalled; other plugins and settings preserved. Restart Harness.');
+  return result;
 }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(error => { console.error(error.message); process.exitCode=1; });
+export async function main(args=process.argv.slice(2)) {
+  let profile='web',dryRun=false;
+  for(let i=0;i<args.length;i++) {
+    if(args[i]==='--profile') {profile=args[++i];if(!profile) throw new Error('Missing profile.');}
+    else if(args[i]==='--dry-run') dryRun=true;
+    else if(['--help','-h'].includes(args[i])) { console.log('Remove only SourceFerry. Stop Harness first.\nUsage: node scripts/uninstall.mjs [--profile web] [--dry-run]\nOther plugins and settings are preserved. No full restore or force option. DSH_HOME selects the installation home.');return;}
+    else throw new Error('Unknown uninstall option. Only selective removal is supported.');
+  }
+  const configured=process.env.DSH_HOME?.trim();
+  const home=configured ? resolve(configured==='~'?homedir():configured.replace(/^~[\\/]/,`${homedir()}/`)) : join(homedir(),'.dsh');
+  await uninstall(home,{profile,dryRun});
+}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)) main().catch(e=>{console.error(e.message);process.exitCode=1;});

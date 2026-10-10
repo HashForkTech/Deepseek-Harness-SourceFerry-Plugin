@@ -1,6 +1,6 @@
 {
   "name": "deepseek-harness-sourceferry-plugin",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "SourceFerry search and fetch plugins for DeepSeek Harness, with a complete installer",
   "private": true,
   "type": "module",

@@ -137,7 +137,7 @@ export async function main(args = process.argv.slice(2)) {
   try { dsh = await findCommand('dsh'); } catch {
     if (previous?.dsh && await exists(previous.dsh)) dsh = previous.dsh;
   }
-  const installDir = join(base, 'installations', `1.1.0-${Date.now()}-${process.pid}`);
+  const installDir = join(base, 'installations', `1.2.0-${Date.now()}-${process.pid}`);
   await recordOwned(checkpoint, installDir, privateFile);
   await mkdir(installDir, { recursive: true });
   console.log('Installing plugin dependencies into a permanent directory...');
@@ -174,6 +174,8 @@ export async function main(args = process.argv.slice(2)) {
   const backupDir = join(base, 'backups', `${options.profile}-${Date.now()}`);
   await backupProfile(profileDir, backupDir);
   console.log(`Profile backup: ${backupDir}`);
+  const ownershipPath = join(base, 'profiles', options.profile, 'uninstall-ownership.json');
+  const previousOwnership = await exists(ownershipPath) ? await readFile(ownershipPath, 'utf8') : null;
   try {
     for (const plugin of ['local-web-search', 'local-web-fetch']) {
       await run(dsh, ['plugin', '--profile', options.profile, 'add', '.'], { cwd: join(installDir, 'plugins', plugin), env });
@@ -182,7 +184,10 @@ export async function main(args = process.argv.slice(2)) {
     if (!options.keepNative) {
       const patchFile = join(profileDir, 'cordis.patch.yml');
       const current = await exists(patchFile) ? await readFile(patchFile, 'utf8') : '[]\n';
+      const ownershipPath = join(base, 'profiles', options.profile, 'uninstall-ownership.json');
+      const ownership = await exists(ownershipPath) ? await readJson(ownershipPath) : { beforePatch: current, beforeEffective: before.stdout };
       const update = disableNativeTools(current, before.stdout);
+      await privateFile(ownershipPath, JSON.stringify({ ...ownership, afterPatch: update.text }, null, 2));
       await privateFile(patchFile, update.text);
       console.log(`Disabled ${update.count} native web plugin instances, preserving complete preset configurations.`);
     }
@@ -213,6 +218,8 @@ export async function main(args = process.argv.slice(2)) {
     await sealCheckpoint(checkpoint, privateFile);
     console.log(`Installation complete. Restart Harness using:\n${process.platform === 'win32' ? launcher + '.cmd' : launcher} --no-open\nOpen a new conversation after restarting. Gateway credentials are stored privately and never printed.`);
   } catch (error) {
+    if (previousOwnership === null) await rm(ownershipPath, { force: true });
+    else await privateFile(ownershipPath, previousOwnership);
     await restoreProfile(profileDir, backupDir);
     if (await exists(join(profileDir, 'package.json'))) {
       try { await run(dsh, ['plugin', '--profile', options.profile, 'install'], { env }); }
