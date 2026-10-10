@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';import {tmpdir} from 'node:os';
 import {uninstall,planFor} from '../scripts/uninstall.mjs';
-test('v1.0 backup is never restored over later profile plugins or user settings',async()=>{
+test('Installation backup is never restored over later profile plugins or user settings',async()=>{
  const home=await mkdtemp(join(tmpdir(),'sf-old-dsh-')),p=planFor(home),backup=join(p.base,'backups','web-100');
  try{await mkdir(backup,{recursive:true});await mkdir(p.profileDir,{recursive:true});await mkdir(p.settingsDir,{recursive:true});
  await writeFile(join(backup,'snapshot.json'),JSON.stringify({present:['package.json','cordis.patch.yml']}));

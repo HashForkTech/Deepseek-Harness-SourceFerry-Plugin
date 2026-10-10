@@ -23,7 +23,7 @@ async function walk(relative) {
     else if (entry.isFile()) await add(path);
   }
 }
-for (const file of ['README.md', 'LICENSE', 'VALIDATION.md', 'package.json', 'package-lock.json', 'install.sh', 'install.ps1', 'uninstall.sh', 'uninstall.ps1', '.gitattributes', '.gitignore']) await add(file);
+for (const file of ['README.md', 'RELEASE_NOTES.md', 'LICENSE', 'VALIDATION.md', 'package.json', 'package-lock.json', 'install.sh', 'install.ps1', 'uninstall.sh', 'uninstall.ps1', '.gitattributes', '.gitignore']) await add(file);
 for (const directory of ['plugins', 'shared', 'scripts']) await walk(directory);
 async function vendor(dir, relative='') {
   for (const entry of await readdir(join(root,'node_modules/yaml',dir,relative),{withFileTypes:true})) {

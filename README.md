@@ -1,4 +1,4 @@
-# Deepseek Harness SourceFerry Plugin
+# Deepseek Harness SourceFerry Plugin V1.0
 
 Two independently switchable [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugins that send web search and page fetch requests to your [SourceFerry Gateway](https://github.com/HashForkTech/SourceFerry).
 
@@ -120,7 +120,7 @@ If installation reports a remaining native web tool, inspect `$DSH_HOME/cordis.p
 
 ## Uninstall
 
-Stop Harness, open the extracted **v1.2 or newer** package directory, and run:
+Stop Harness, open the extracted package directory, and run:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\uninstall.ps1
@@ -132,13 +132,11 @@ bash ./uninstall.sh
 
 DSH_HOME must select the home used for installation. For another profile, use `-Profile name` / `--profile name`. `-DryRun` / `--dry-run` previews removal without writing files.
 
-**Selective removal is the only uninstall mode.** There is no force or full-snapshot restoration option. The script edits the current configuration and removes only SourceFerry registrations, its private gateway configuration, reports, launcher and its two profile dependency registrations and links. Other plugins, profiles, settings, files and dependencies remain in place, including additions made after installation or a reinstall. The profile directory, other lockfile entries and package-manager dependency store remain in place.
+**Selective removal is the only uninstall mode.** The script edits the current configuration and removes only SourceFerry registrations, its private gateway configuration, reports, launcher and its two profile dependency registrations and links. Other plugins, profiles, settings, files and dependencies remain in place, including additions made after installation or a reinstall. The profile directory, other lockfile entries and package-manager dependency store remain in place.
 
-Installer changes to native web preferences are undone field by field only where the current value still equals the value written by SourceFerry. Subsequent user changes and newly created profiles are preserved. If an older installation does not contain enough ownership history to prove an original preference, it is left unchanged.
+Installer changes to native web preferences are undone field by field only where the current value still equals the value written by SourceFerry. Subsequent user changes and newly created profiles are preserved. If ownership cannot be established, the preference is left unchanged.
 
-Managed CLIs, shared runtime/dependency directories and private installation backups are retained: another plugin or launcher may now use them. Removed SourceFerry files are moved to a private recovery directory under `sourceferry/uninstall-recovery`; only the changes made by the current uninstall are rolled back if it fails. Backups are never applied to the user environment during uninstall. No gateway connection, token input or package-manager download is needed; the ZIP includes the small parser required for offline removal. Running uninstall again is harmless.
-
-**For v1.0/v1.1 installations, use this updated package's uninstaller.** Their old uninstaller scripts still use full backup restoration and must not be used.
+Managed CLIs, shared runtime/dependency directories and private installation backups are retained: another plugin or launcher may now use them. Removed SourceFerry files are moved to a private recovery directory under `sourceferry/uninstall-recovery`; only the changes made by the current uninstall are rolled back if it fails. Backups are never applied to the user environment during uninstall. Running uninstall again is harmless.
 
 ## Development and package
 
@@ -148,10 +146,12 @@ npm test
 npm run package
 ```
 
-The package command creates `dist/deepseek-harness-sourceferry-plugin-1.2.0.zip` and its SHA-256 checksum. It includes installer scripts, both plugins, shared code, the dependency lockfile and documentation; it excludes credentials, dependencies, research downloads and test artifacts. The ZIP requires npm registry access on first installation. GitHub Actions tests Node 24 on Linux, macOS and Windows, checks real Harness composition and builds a downloadable package artifact.
+The package command creates `dist/deepseek-harness-sourceferry-plugin-1.0.0.zip` and its SHA-256 checksum. It includes installer scripts, both plugins, shared code, the dependency lockfile and documentation; it excludes credentials, dependencies, research downloads and test artifacts. The ZIP requires npm registry access on first installation. GitHub Actions tests Node 24 on Linux, macOS and Windows, checks real Harness composition and builds a downloadable package artifact.
 
 See [VALIDATION.md](VALIDATION.md) for what has been tested and the limits of those checks.
 
 ## Credits and license
 
 Original plugin and installer code: [MIT](LICENSE), HashForkTech. DeepSeek Harness and Cordis are developed by DeepSeek AI and retain their upstream licenses. SourceFerry, SearXNG and Crawl4AI run separately on the gateway; this package does not redistribute their server binaries. The supplied `plugin_install.md` was used as technical reference; its machine-specific migration commands were not executed on this computer.
+
+See [RELEASE_NOTES.md](RELEASE_NOTES.md) for the V1.0 release details.

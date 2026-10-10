@@ -1,9 +1,9 @@
-# Validation
+# V1.0 validation
 
-Version 1.2.0 replaces snapshot restoration with selective uninstall. Both old and new installations can be removed using the current package.
+The automated suite covers gateway responses, credentials, installation, and selective uninstall. The suite includes real Harness schema compilation, composed-profile checks, and search/fetch tool dispatch.
 
-Automated preservation tests cover plugins and settings added after installation, shared plugin marketplaces, native preferences edited by the user, read-only preview, repeated removal, malformed configuration, and rejection of force/full-restore options. Installation rollback remains limited to the installation operation.
+Preservation checks cover plugins and settings added after installation, user-edited native preferences, preview mode, repeated removal, malformed configuration, and rejection of unsupported uninstall options. Uninstall changes only SourceFerry entries and files. Installation failure recovery is limited to the installation operation.
 
-Private gateway credentials are excluded from source and distributable packages. Shared runtimes, CLIs, package-manager dependencies and historical backups are intentionally retained. Uninstall does not restore old configuration files, contact the gateway, or reinstall dependencies.
+Private gateway credentials are excluded from source and packages. Shared runtimes, CLIs, dependency stores and installation backups remain available after uninstall. Extracted-package uninstall was checked in an isolated home with no gateway connection or dependency installation.
 
-The ZIP includes a pinned configuration parser with its license; extracted uninstall works without npm installation. See README.md for commands and the treatment of unknown legacy native preferences.
+These checks validate integration and preservation behavior; they do not guarantee upstream search-result availability. See [README.md](README.md) for installation, verification and uninstall commands.

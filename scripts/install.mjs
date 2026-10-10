@@ -137,7 +137,7 @@ export async function main(args = process.argv.slice(2)) {
   try { dsh = await findCommand('dsh'); } catch {
     if (previous?.dsh && await exists(previous.dsh)) dsh = previous.dsh;
   }
-  const installDir = join(base, 'installations', `1.2.0-${Date.now()}-${process.pid}`);
+  const installDir = join(base, 'installations', `1.0.0-${Date.now()}-${process.pid}`);
   await recordOwned(checkpoint, installDir, privateFile);
   await mkdir(installDir, { recursive: true });
   console.log('Installing plugin dependencies into a permanent directory...');
