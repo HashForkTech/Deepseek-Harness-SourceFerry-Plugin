@@ -36,7 +36,7 @@ The installer prompts for the gateway URL and existing token. **Token input is h
 
 The installer:
 
-1. Checks gateway health and authenticated search and fetch responses.
+1. Checks gateway health and authenticated search and fetch responses. Fetch verification uses `https://example.com/` as a neutral control page.
 2. Installs pinned plugin dependencies into a permanent directory and prepares pnpm if needed.
 3. Installs the pinned Harness CLI if missing and checks its exact version.
 4. Validates both plugins using Harness's real schema compiler and executes both tools against the gateway.

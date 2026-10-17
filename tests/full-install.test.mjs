@@ -44,6 +44,10 @@ test('complete installer, repeat install, verification, launcher inheritance and
       if (request.headers.authorization !== 'Bearer fixture-only-token') { response.writeHead(401); response.end('{}'); return; }
       let body=''; for await (const chunk of request) body+=chunk;
       const args=JSON.parse(body);
+      // Only the neutral control site is fetchable; unrelated sites may return 404.
+      if (request.url === '/fetch' && new URL(args.url).hostname !== 'example.com') {
+        response.writeHead(404, {'Content-Type':'application/json'}); response.end('{}'); return;
+      }
       result=request.url==='/search' ? {sources:[{url:'https://example.com',title:'Fixture',snippet:'Test'}],truncated:false}
         : {url:args.url,content:{success:true,markdown:'# Fixture'},truncated:false};
     }

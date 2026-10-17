@@ -129,7 +129,7 @@ export async function main(args = process.argv.slice(2)) {
   await gateway.health();
   const search = await gateway.search(['DeepSeek Harness official site'], 3);
   if (!search.sources.length) throw new Error('Gateway search returned no results; fix the gateway first.');
-  await gateway.fetch('https://www.deepseek.com/harness/');
+  await gateway.fetch('https://example.com/');
   const { planFor, prepareCheckpoint } = await import('./uninstall.mjs');
   const checkpoint = await prepareCheckpoint(planFor(dshHome, options.profile));
   const npm = await findCommand('npm');

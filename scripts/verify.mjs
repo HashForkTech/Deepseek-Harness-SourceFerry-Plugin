@@ -5,7 +5,7 @@ export async function verifyGateway(env) {
   await gateway.health();
   const search = await gateway.search(['DeepSeek Harness official site'], 3);
   if (!search.sources.length) throw new Error('Gateway search returned no results. Check SearXNG before installing.');
-  await gateway.fetch('https://www.deepseek.com/harness/');
+  await gateway.fetch('https://example.com/');
   return { health: true, search: true, fetch: true };
 }
 
